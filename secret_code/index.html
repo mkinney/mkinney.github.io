@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Grid Messenger</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
+            --bg: #f4f7f6;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--primary);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        h1 { text-align: center; font-size: 1.5rem; margin-bottom: 25px; }
+        .section { margin-bottom: 30px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 0.9rem; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        input:focus { border-color: var(--accent); outline: none; }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:active { background-color: #2980b9; }
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: #eef2f3;
+            border-radius: 8px;
+            word-wrap: break-word;
+            min-height: 20px;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        .ambiguity-note { font-size: 0.8rem; color: #7f8c8d; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔐 Code Grid</h1>
+
+    <div class="section">
+        <label>Text to Encode (e.g. CAT)</label>
+        <input type="text" id="plainInput" placeholder="Enter message...">
+        <button onclick="runEncoder()">Encode to Numbers</button>
+        <div class="result-box" id="encodedResult">---</div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <div class="section">
+        <label>Numbers to Decode (e.g. 070539)</label>
+        <input type="number" id="numInput" placeholder="Enter digits...">
+        <button onclick="runDecoder()">Decode to Text</button>
+        <div class="result-box" id="decodedResult">---</div>
+        <div id="ambiguity" class="ambiguity-note"></div>
+    </div>
+</div>
+
+<script>
+    const ENCODING_MAP = {
+        'A': '05', 'B': '06', 'C': '07', 'D': '08', 'E': '09',
+        'F': '15', 'G': '16', 'H': '17', 'I': '18', 'J': '19',
+        'K': '25', 'L': '26', 'M': '27', 'N': '28', 'O': '29',
+        'P': '35', 'Q': '36', 'R': '37', 'S': '38', 'T': '39',
+        'U': '45', 'V': '45', 'W': '46', 'X': '47', 'Y': '48', 'Z': '49'
+    };
+
+    const DECODING_MAP = {
+        '05': ['A'], '06': ['B'], '07': ['C'], '08': ['D'], '09': ['E'],
+        '15': ['F'], '16': ['G'], '17': ['H'], '18': ['I'], '19': ['J'],
+        '25': ['K'], '26': ['L'], '27': ['M'], '28': ['N'], '29': ['O'],
+        '35': ['P'], '36': ['Q'], '37': ['R'], '38': ['S'], '39': ['T'],
+        '45': ['U', 'V'], '46': ['W'], '47': ['X'], '48': ['Y'], '49': ['Z']
+    };
+
+    function runEncoder() {
+        let input = document.getElementById('plainInput').value.toUpperCase().replace(/[^A-Z]/g, '');
+        let result = "";
+        for (let char of input) {
+            result += ENCODING_MAP[char] || "";
+        }
+        document.getElementById('encodedResult').innerText = result || "Enter text above";
+    }
+
+    function runDecoder() {
+        let input = document.getElementById('numInput').value;
+        let ambiguityDiv = document.getElementById('ambiguity');
+        ambiguityDiv.innerText = "";
+
+        if (input.length % 2 !== 0) {
+            document.getElementById('decodedResult').innerText = "Error: Need even # of digits";
+            return;
+        }
+
+        let pairs = input.match(/.{1,2}/g);
+        let possibilities = [[]];
+
+        for (let pair of pairs) {
+            let letters = DECODING_MAP[pair];
+            if (!letters) {
+                document.getElementById('decodedResult').innerText = "Error: Invalid pair " + pair;
+                return;
+            }
+            
+            let newPossibilities = [];
+            for (let prefix of possibilities) {
+                for (let letter of letters) {
+                    newPossibilities.push([...prefix, letter]);
+                }
+            }
+            possibilities = newPossibilities;
+        }
+
+        let results = possibilities.map(p => p.join(''));
+        document.getElementById('decodedResult').innerText = results.join(' / ');
+        
+        if (results.length > 1) {
+            ambiguityDiv.innerText = "* Multiple options shown due to U/V sharing code 45.";
+        }
+    }
+</script>
+
+<p>
+<br>
+<img src="secret_code.png" width=200>
+
+</body>
+</html>
